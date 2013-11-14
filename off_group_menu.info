@@ -1,0 +1,6 @@
+name = Off Group Menu
+description = provides a navigation block for site users.
+core = 7.x
+package = Collabco 
+project = "off_group_menu"
+

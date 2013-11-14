@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * Implements hook_block_info().
+ */
+function off_group_menu_block_info() {
+  $blocks = array();
+  $blocks['off_group_menu'] = array(
+    'info' => t('Off Group Menu'),
+  );
+ 
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function off_group_menu_block_view($delta='') {
+  $block = array();
+  global $base_url;
+  switch($delta) {
+    case 'off_group_menu' :
+      global $user;
+      $group = og_context();
+      $group_field_info = field_info_field('og_group_ref');
+      if ($group_field_info) {
+        foreach($group_field_info->bundle as $node_type) {
+          $perm_string = "create $node_type->machine_name content";
+          if (user_access($perm_string)) {
+            $content_links[] = "node/add/$node_type->machine_name?groups_audience=$group->id";
+          }
+        }
+        $menu = array();
+        $block['content'] = $menu;
+      }
+    break;
+  }
+  return $block;
+} 
+
