@@ -8,7 +8,6 @@ function off_group_menu_block_info() {
   $blocks['off_group_menu'] = array(
     'info' => t('Off Group Menu'),
   );
- 
   return $blocks;
 }
 
@@ -20,21 +19,44 @@ function off_group_menu_block_view($delta='') {
   global $base_url;
   switch($delta) {
     case 'off_group_menu' :
-      global $user;
-      $group = og_context();
-      $group_field_info = field_info_field('og_group_ref');
-      if ($group_field_info) {
-        foreach($group_field_info->bundle as $node_type) {
-          $perm_string = "create $node_type->machine_name content";
-          if (user_access($perm_string)) {
-            $content_links[] = "node/add/$node_type->machine_name?groups_audience=$group->id";
-          }
-        }
-        $menu = array();
-        $block['content'] = $menu;
-      }
+    $block['content'] = off_group_menu_build_group_menu();
     break;
   }
   return $block;
 } 
+
+function off_group_menu_build_group_menu() {
+  global $user;
+  $group = og_context();
+  // Get field info with node bundles the field is used on.
+  $group_field_info = field_info_field('og_group_ref');
+  if (!empty($group_field_info) and !empty($group)) {
+    $render = array(
+      '#type' => 'container',
+      '#attributes' => array('class' => array('group_menu')),
+      'content' => array(
+        '#type' => 'markup',
+        '#markup' => t('Add content to this group:'),
+        '#weight' => 0,
+      ),
+      'add-content-list' => array(
+        '#theme' => 'item_list',
+        '#weight' => 1,
+      ),
+    );
+    foreach($group_field_info['bundles']['node'] as $node_bundle) {
+      // Construct permission name string for the node bundle.
+      $perm_string = "create $node_bundle content";
+      // Check if the current user can create the node bundle.
+      if (user_access($perm_string)) {
+        $text = t('Create ') . node_type_get_name($node_bundle);
+        $url = ("node/add/$node_bundle");
+        $query_array = array('og_group_ref' => $group['gid']);
+        $options = array('query' => $query_array);
+        $render['add-content-list']['#items'][$node_bundle] = l($text, $url, $options); 
+      }
+    }
+    return $render;
+  }
+}
 
