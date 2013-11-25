@@ -27,10 +27,18 @@ function off_group_menu_block_view($delta='') {
 
 function off_group_menu_build_group_menu() {
   global $user;
+
+  // Check if the current user is in the current group from context.
   $group = og_context();
-  // Get field info with node bundles the field is used on.
+  if (empty($group) or !og_is_member('node', $group['gid'], 'user', $user)) {
+    return;
+  }
+
+  // Create the list off links for each node type that the user can add to the
+  // group. 
   $group_field_info = field_info_field('og_group_ref');
-  if (!empty($group_field_info) and !empty($group)) {
+  if (!empty($group_field_info)) {
+    // Build render array structure.
     $render = array(
       '#type' => 'container',
       '#attributes' => array('class' => array('group_menu')),
@@ -44,6 +52,7 @@ function off_group_menu_build_group_menu() {
         '#weight' => 1,
       ),
     );
+    // Add a list item for each node type, as a link to its node/add page.
     foreach($group_field_info['bundles']['node'] as $node_bundle) {
       // Construct permission name string for the node bundle.
       $perm_string = "create $node_bundle content";
