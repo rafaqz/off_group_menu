@@ -30,7 +30,9 @@ function off_group_menu_build_group_menu() {
 
   // Check if the current user is in the current group from context.
   $group = og_context();
-  if (empty($group) or !og_is_member('node', $group['gid'], 'user', $user)) {
+  $group_type = 'node';
+  $entity_type = 'user';
+  if (empty($group) or !og_is_member($group_type, $group['gid'], $entity_type, $user)) {
     return;
   }
 
