@@ -58,10 +58,10 @@ function off_group_menu_build_group_menu() {
     foreach($group_field_info['bundles']['node'] as $node_bundle) {
       // Construct permission name string for the node bundle.
       $perm_string = "create $node_bundle content";
-      // Check if the current user can create the node bundle.
+      // Add menu link if the current user can create the node bundle.
       if (user_access($perm_string)) {
         $text = t('Create ') . node_type_get_name($node_bundle);
-        $url = ("node/add/$node_bundle");
+        $url = "node/add/" . str_replace('_', '-', $node_bundle);
         $query_array = array('og_group_ref' => $group['gid']);
         $options = array('query' => $query_array);
         $render['add-content-list']['#items'][$node_bundle] = l($text, $url, $options); 
