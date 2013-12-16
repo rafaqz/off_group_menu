@@ -53,19 +53,36 @@ function off_group_menu_build_group_menu() {
         '#theme' => 'item_list',
         '#weight' => 1,
       ),
+      'add-term-list' => array(
+        '#theme' => 'item_list',
+        '#weight' => 2,
+      ),
     );
+
+    // Build query array for entity reference prepoluate
+    $query_array = array('og_group_ref' => $group['gid']);
+    $options = array('query' => $query_array);
+
     // Add a list item for each node type, as a link to its node/add page.
-    foreach($group_field_info['bundles']['node'] as $node_bundle) {
+    foreach($group_field_info['bundles']['node'] as $bundle) {
       // Construct permission name string for the node bundle.
-      $perm_string = "create $node_bundle content";
-      // Add menu link if the current user can create the node bundle.
+      $perm_string = "create $bundle content";
+      // Add menu link if the current user can create nodes in the bundle.
       if (user_access($perm_string)) {
-        $text = t('Create ') . node_type_get_name($node_bundle);
-        $url = "node/add/" . str_replace('_', '-', $node_bundle);
-        $query_array = array('og_group_ref' => $group['gid']);
-        $options = array('query' => $query_array);
-        $render['add-content-list']['#items'][$node_bundle] = l($text, $url, $options); 
+        $text = t('Create ') . node_type_get_name($bundle);
+        $url = "node/add/" . str_replace('_', '-', $bundle);
+        $render['add-content-list']['#items'][$bundle] = l($text, $url, $options); 
       }
+    }
+    // Construct permission name string for the taxonomy bundle.
+    $bundle = 'category';
+    $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
+    $perm_string = "edit terms in " .  $vocabulary->vid;
+    // Add menu link if the current user can create taxonomy terms in the bundle.
+    if (user_access($perm_string)) {
+      $text = t('Add ') . $vocabulary->name;
+      $url = "taxonomy/$bundle/add/";
+      $render['add-term-list']['#items'][$bundle] = l($text, $url, $options); 
     }
     return $render;
   }
