@@ -1,6 +1,50 @@
 <?php
 
 /**
+ * Implements hook_menu().
+ */
+
+function off_group_menu_menu() {
+  $items['taxonomy/%/add'] = array(
+    'page callback' => 'off_group_menu_term_add_page',
+    'page arguments' => array(1),
+    'access callback' => 'off_group_menu_term_add_access',
+    'access arguments' => array(1),
+  );
+  return $items;
+}
+
+/**
+ * Provide users with a term add page.
+ *
+ * @return array
+ *   A Drupal build array.
+ */
+
+function off_group_menu_term_add_page($bundle) {
+  // Set og context from url query.
+  $params = drupal_get_query_parameters();
+  if (!empty($params['og_group_ref'])) {
+    $group = node_load($params['og_group_ref']);
+    og_context('node', $group);
+  }
+
+  module_load_include('inc', 'taxonomy', 'taxonomy.admin');
+  $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
+  //Build taxonomy form.
+  drupal_set_title($title = $vocabulary->name, $output = CHECK_PLAIN);
+  $form_id = 'taxonomy_form_term';
+  $edit = array();
+  return drupal_render(drupal_get_form($form_id, $edit, $vocabulary));
+}
+
+function off_group_menu_term_add_access($bundle) {
+  $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
+  $perm_string = "edit terms in " .  $vocabulary->vid;
+  return user_access($perm_string);
+}
+
+/**
  * Implements hook_block_info().
  */
 function off_group_menu_block_info() {
@@ -15,12 +59,11 @@ function off_group_menu_block_info() {
  * Implements hook_block_view().
  */
 function off_group_menu_block_view($delta='') {
-  $block = array();
   global $base_url;
   switch($delta) {
     case 'off_group_menu' :
-    $block['content'] = off_group_menu_build_group_menu();
-    break;
+      $block = off_group_menu_build_group_menu();
+      break;
   }
   return $block;
 } 
@@ -30,18 +73,19 @@ function off_group_menu_build_group_menu() {
 
   // Check if the current user is in the current group from context.
   $group = og_context();
-  $group_type = 'node';
   $entity_type = 'user';
-  if (empty($group) or !og_is_member($group_type, $group['gid'], $entity_type, $user)) {
+  if (empty($group) or !og_is_member($group['group_type'], $group['gid'], $entity_type, $user)) {
     return;
   }
+  $block['og_context'] = $group;
 
   // Create the list off links for each node type that the user can add to the
   // group. 
   $group_field_info = field_info_field('og_group_ref');
   if (!empty($group_field_info)) {
     // Build render array structure.
-    $render = array(
+    $block = array();
+    $content = array(
       '#type' => 'container',
       '#attributes' => array('class' => array('group_menu')),
       'content' => array(
@@ -71,20 +115,29 @@ function off_group_menu_build_group_menu() {
       if (user_access($perm_string)) {
         $text = t('Create ') . node_type_get_name($bundle);
         $url = "node/add/" . str_replace('_', '-', $bundle);
-        $render['add-content-list']['#items'][$bundle] = l($text, $url, $options); 
+        $content['add-content-list']['#items'][$bundle] = l($text, $url, $options); 
       }
     }
-    // Construct permission name string for the taxonomy bundle.
-    $bundle = 'category';
-    $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
-    $perm_string = "edit terms in " .  $vocabulary->vid;
-    // Add menu link if the current user can create taxonomy terms in the bundle.
-    if (user_access($perm_string)) {
-      $text = t('Add ') . $vocabulary->name;
-      $url = "taxonomy/$bundle/add/";
-      $render['add-term-list']['#items'][$bundle] = l($text, $url, $options); 
+
+    // Add a list item for each taxonomy vocabulary, as a link to its term/add
+    // and vocabulary view.
+    foreach($group_field_info['bundles']['taxonomy_term'] as $bundle) {
+      $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
+      // Construct permission name string for the taxonomy bundle.
+      $perm_string = "edit terms in " .  $vocabulary->vid;
+      // Add menu link if the current user can create taxonomy terms in the bundle.
+      if (user_access($perm_string)) {
+        $text = t('Add ') . $vocabulary->name;
+        $url = "taxonomy/$bundle/add/";
+        $content['add-term-list']['#items'][$bundle] = l($text, $url, $options); 
+        // Link to view to edit all terms in vocab and group.
+        $text = t('View ') . $vocabulary->name . ' ' . t('vocabulary');
+        $url = "node/{$group['gid']}/taxonomy/$bundle/";
+        $content['add-term-list']['#items']["edit-$bundle"] = l($text, $url); 
+      }
     }
-    return $render;
+    $block['content'] = $content;
+    return $block;
   }
 }
 
