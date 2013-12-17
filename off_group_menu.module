@@ -29,20 +29,28 @@ function off_group_menu_term_add_page($bundle) {
     og_context('node', $group);
   }
 
-  module_load_include('inc', 'taxonomy', 'taxonomy.admin');
-  $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
-  //Build taxonomy form.
-  drupal_set_title($title = t('Add ') . $vocabulary->name, $output = CHECK_PLAIN);
-  $form_id = 'taxonomy_form_term';
-  $edit = array();
-  $form = drupal_get_form($form_id, $edit, $vocabulary);
-  return drupal_render($form);
+  if ($vocabulary = taxonomy_vocabulary_machine_name_load($bundle)) {
+    module_load_include('inc', 'taxonomy', 'taxonomy.admin');
+    //Build taxonomy form.
+    drupal_set_title($title = t('Add ') . $vocabulary->name, $output = CHECK_PLAIN);
+    $form_id = 'taxonomy_form_term';
+    $edit = array();
+    $form = drupal_get_form($form_id, $edit, $vocabulary);
+    return drupal_render($form);
+  }
+  else {
+    return MENU_NOT_FOUND;
+  }
 }
 
 function off_group_menu_term_add_access($bundle) {
-  $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
-  $perm_string = "edit terms in " .  $vocabulary->vid;
-  return user_access($perm_string);
+  if ($vocabulary = taxonomy_vocabulary_machine_name_load($bundle)) {
+    $perm_string = "edit terms in " .  $vocabulary->vid;
+    return user_access($perm_string);
+  }
+  else {
+    return TRUE;
+  }
 }
 
 /**
