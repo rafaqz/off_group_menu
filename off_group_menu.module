@@ -32,7 +32,7 @@ function off_group_menu_term_add_page($bundle) {
   module_load_include('inc', 'taxonomy', 'taxonomy.admin');
   $vocabulary = taxonomy_vocabulary_machine_name_load($bundle);
   //Build taxonomy form.
-  drupal_set_title($title = $vocabulary->name, $output = CHECK_PLAIN);
+  drupal_set_title($title = t('Add ') . $vocabulary->name, $output = CHECK_PLAIN);
   $form_id = 'taxonomy_form_term';
   $edit = array();
   $form = drupal_get_form($form_id, $edit, $vocabulary);
